@@ -123,7 +123,6 @@
 				}else{
 					$("#returnMessage").html('<div class="alert alert-warning" role="alert"><strong>Attention!</strong> Cet utilisateur n\'a aucun emprunt en cours.</div>');
 				}
-
 			};
 					
 			</script>

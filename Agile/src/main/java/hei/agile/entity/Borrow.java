@@ -24,11 +24,11 @@ public class Borrow {
 	@ManyToOne
 	@JoinColumn(name = "idMember")
 	private Member member;
-	
+
 	@Column(name = "dateBorrowEnd")
 	private Date dateBorrowEnd;
-	
-	@Column(name="returned")
+
+	@Column(name = "returned")
 	private boolean returned;
 
 	public Borrow(Book book, Member member, Date dateBorrowEnd) {
@@ -89,5 +89,4 @@ public class Borrow {
 	public void setDateBorrowEnd(Date dateBorrowEnd) {
 		this.dateBorrowEnd = dateBorrowEnd;
 	}
-
 }
