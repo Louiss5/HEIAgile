@@ -7,7 +7,10 @@ import hei.agile.service.BookService;
 import hei.agile.service.BorrowService;
 import hei.agile.service.MemberService;
 
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 import javax.inject.Inject;
@@ -18,10 +21,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.ModelMap;
+import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.bind.support.SessionStatus;
 
 @Controller
 @Named
@@ -54,6 +59,7 @@ public class BorrowController {
 		long idBook = Long.parseLong(request.getParameter("idBook"));
 		long idMember = Long.parseLong(request.getParameter("idMember"));
 
+		String dateBorrowEnd = request.getParameter("dateBorrowEnd");
 		List<String> errors = new ArrayList<>();
 
 		Book book = bookService.findOne(idBook);
@@ -72,12 +78,17 @@ public class BorrowController {
 		model.addAttribute("errors", errors);
 
 		if (errors.isEmpty()) {
-			Borrow borrow = new Borrow(book, member);
-			borrowService.saveBorrow(borrow);
-			logger.info("Ajout d'un emprunt : {} par: {} {}",
-					(borrow.getBook()).getTitleBook(),
-					(borrow.getMember()).getFirstNameMember(),
-					(borrow.getMember()).getLastNameMember());
+			SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd");
+			
+			try {
+				Date date = formatter.parse(dateBorrowEnd);
+				Borrow borrow = new Borrow(book, member, date);
+				borrowService.saveBorrow(borrow);
+				logger.info("Ajout d'un emprunt : {} par: {} {}", (borrow.getBook()).getTitleBook(), (borrow.getMember()).getFirstNameMember(), (borrow.getMember()).getLastNameMember());
+				
+			} catch (ParseException e) {
+				e.printStackTrace();
+			}
 			return "redirect:/borrow";
 		} else {
 			return "borrow/BorrowBookForm";
@@ -97,30 +108,21 @@ public class BorrowController {
 	public @ResponseBody String showBorrowedBooks(
 			@PathVariable("idmember") long idMember) {
 		String borrowsbymember = borrowService.findBorrowByIdMember(idMember);
-		// System.out.println(borrowsbymember);
-		// Borrow book = borrowsbymember.get(0);
-		// System.out.println(book.getBook());
-		// System.out.println(borrowsbymember.get(0).getBook());
-
-		// A supprimer
-		/*
-		 * borrowsbymember.add(new Borrow( new Book(1, "1234", "Livre1", (float)
-		 * 5), new Member("Moi", "Moi", "M", new Date())));
-		 */
-		/*
-		 * GsonBuilder b = new GsonBuilder();
-		 * b.registerTypeAdapterFactory(HibernateProxyTypeAdapter.FACTORY); Gson
-		 * gson = b.create();
-		 */
-		// Gson gson = new Gson();
-		// return gson.toJson(borrowsbymember);
+		
 		return borrowsbymember;
 	}
 
-	@RequestMapping(value = "/return", method = RequestMethod.POST)
-	public String updateBorrows() {
-
-		return "redirect:/return";
+	@RequestMapping(value = "/returnBook/{idmember}", method = RequestMethod.POST)
+	public @ResponseBody String updateBorrows(HttpServletRequest request, ModelMap model, @PathVariable("idmember") long idMember) {
+		String [] checkedReturned = request.getParameterValues("returned");
+		if(checkedReturned.length > 0){
+			for (int i = 0; i < checkedReturned.length; i++) {
+				borrowService.setBorrowToReturned(Long.parseLong(checkedReturned[i]));
+			}
+		}
+		String borrowsbymember = borrowService.findBorrowByIdMember(idMember);
+		
+		return borrowsbymember;
 	}
 
 }

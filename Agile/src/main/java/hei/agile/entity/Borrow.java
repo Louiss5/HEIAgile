@@ -1,5 +1,8 @@
 package hei.agile.entity;
 
+import java.util.Date;
+
+import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
@@ -14,8 +17,6 @@ public class Borrow {
 	@GeneratedValue(strategy = GenerationType.AUTO)
 	private long idBorrow;
 
-	private boolean returned;
-
 	@ManyToOne
 	@JoinColumn(name = "idBook")
 	private Book book;
@@ -23,12 +24,26 @@ public class Borrow {
 	@ManyToOne
 	@JoinColumn(name = "idMember")
 	private Member member;
+	
+	@Column(name = "dateBorrowEnd")
+	private Date dateBorrowEnd;
+	
+	@Column(name="returned")
+	private boolean returned;
 
-	public Borrow(Book book, Member member) {
+	public Borrow(Book book, Member member, Date dateBorrowEnd) {
+		super();
+		this.book = book;
+		this.member = member;
+		this.dateBorrowEnd = dateBorrowEnd;
+	}
+
+	public Borrow(long idBorrow, Book book, Member member, Date dateBorrowEnd) {
 		super();
 		this.idBorrow = idBorrow;
 		this.book = book;
 		this.member = member;
+		this.dateBorrowEnd = dateBorrowEnd;
 	}
 
 	public Borrow() {
@@ -66,4 +81,13 @@ public class Borrow {
 	public void setReturned(boolean returned) {
 		this.returned = returned;
 	}
+
+	public Date getDateBorrowEnd() {
+		return dateBorrowEnd;
+	}
+
+	public void setDateBorrowEnd(Date dateBorrowEnd) {
+		this.dateBorrowEnd = dateBorrowEnd;
+	}
+
 }

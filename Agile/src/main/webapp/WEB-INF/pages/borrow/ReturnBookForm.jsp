@@ -9,87 +9,125 @@
         <script type="text/javascript" src="http://code.jquery.com/ui/1.10.4/jquery-ui.js"></script>
         <link rel="stylesheet" href="http://code.jquery.com/ui/1.10.4/themes/smoothness/jquery-ui.css">
 		<title>Insert title here</title>
+		<link rel="stylesheet" href="http://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css">
 	</head>
 	<body>
-		<form:form method="POST" id="insertBorrow" commandName="borrow" class="form-horizontal">
-			<label>Membre* :</label>
-			<form:input path="member" class="form-control" type="text" name="membreBorrow" id="membreBorrow" placeholder="Nom_Prénom_Date de naissance"/>
-			<div class="message-erreur"></div><br/>
-			<input type="text" name="idMember" id="idMember" style="display:none;"/>
-		</form:form>
-	
-		<div id="tofillwithborrowlist">
-		</div>
+		<div class="container">
+			<h1>Restitution d'Ouvrage</h1>
+			<form:form method="POST" id="insertBorrow" commandName="borrow" class="form-horizontal">
+				<div class="form-group">
+					<div class="row">
+						<label class="col-sm-3 control-label">Membre* :</label>
+						<div class="col-sm-5">
+							<form:input path="member" class="form-control" type="text" name="membreBorrow" id="membreBorrow" placeholder="Nom_Prénom_Date de naissance"/>
+						</div>
+						<input type="text" name="idMember" id="idMember" style="display:none;"/>
+					</div>
+					<div class="row error">
+						<div class="message-erreur col-sm-5 col-sm-offset-3 "></div><br/>
+					</div>
+				</div>
+			</form:form>
 		
-		<script>
-		var everythingValid = false;
-		var titleValid = false;
-		var memberValid = false;
-			$(document).ready(function(){
-				if(availableMembers.length === 0){
-					$("#insertBorrow").hide();
-					$("#emptyMembers").show();
-				}
-				$("#titleBook").bind("change paste keyup", function(){
-					checkTitle($(this).val());				
+			<div id="tofillwithborrowlist">
+			</div>
+			<div id="returnMessage" style="margin-top: 10px;"></div>
+			<script>
+			var everythingValid = false;
+			var titleValid = false;
+			var memberValid = false;
+				$(document).ready(function(){
+					if(availableMembers.length === 0){
+						$("#insertBorrow").hide();
+						$("#emptyMembers").show();
+					}
+					$("#membreBorrow").bind("change paste keyup", function(){
+						if($(this).val() != ""){
+							checkMember($(this).val());		
+						}else{
+							$("#idMember").val(0);
+							$('#tofillwithborrowlist').empty();
+							$("#returnMessage").html('');
+						}
+					});
 				});
-				$("#membreBorrow").bind("change paste keyup", function(){
-					checkMember($(this).val());				
-				});
-			});
-			
-			function checkMember(value){
-				for (var int = 0; int < availableMembers.length; int++) {
-					if(value == availableMembers[int].label){
-						$("#membreBorrow").next(".message-erreur").hide();
-						memberValid = true;
-						$("#idMember").val(availableMembers[int].value);
-						getBorrowTable(availableMembers[int].value);
-						return false;
-					}else{
-						$("#membreBorrow").next(".message-erreur").show().text("Veuillez renseigner un membre valide");
-						$("#submit").hide();
+				
+				function checkMember(value){
+					for (var int = 0; int < availableMembers.length; int++) {
+						if(value == availableMembers[int].label || value == ""){
+							$("#membreBorrow").parent().parent().parent().children(".error").children(".message-erreur").hide();
+							memberValid = true;
+							$("#idMember").val(availableMembers[int].value);
+							getBorrowTable(availableMembers[int].value);
+							return false;
+						}else{
+							$("#membreBorrow").parent().parent().parent().children(".error").children(".message-erreur").show().html("<div class='alert alert-danger'><span class='glyphicon glyphicon-exclamation-sign' aria-hidden='true'></span><span class='sr-only'>Error:</span>Veuillez renseigner un membre valide</div>");
+							$("#submit").hide();
+						}
 					}
 				}
-			}
 			
 			function getBorrowTable(idMember){
 				$.getJSON( "return/"+idMember)
 				.done(function(data){
 						console.log(data);
 						console.log("Membre: "+idMember);
-						$('#tofillwithborrowlist').empty();
-						var toappend="";
-						toappend+='<form:form method="POST" id="returnchecklist" commandName="borrowreturned">';
-						toappend+='<table>';
-						toappend+='<thead>';
-						toappend+='<tr>';
-						toappend+='<td>Titre</td>';
-						toappend+='<td>ISBN</td>';
-						toappend+="<td>Date d'emprunt</td>";
-						toappend+='<td>Retour</td>';
-						toappend+='</tr>';
-						toappend+='</thead>';
-						toappend+='<tbody id="borrowed">';					
-						
-						for(i=0;i<data.length;i++)
-						{
-							toappend+="<tr><td>"+data[i].book.titleBook+"</td>";
-							toappend+="<td>"+data[i].book.isbn+"</td>";
-							toappend+="<td>A ajouter</td>";
-							toappend+='<td><form:checkbox path="returned"/></td>';
-							toappend+="</tr>";
-							
-							
-						}
-						toappend+='</tbody>	';	
-						toappend+='</table>';
-						toappend+='</form:form>';
-						$('#tofillwithborrowlist').append(toappend);
+						generateHtmlTable(data);
 				});
 			}
-				
-		</script>
-		<div id="booksListe" style="display: none;">${books}</div>
+			
+			$(document.body).on("click", "#submit", function(event){
+				var idMember = $("#idMember").val();
+					$.post('returnBook/'+idMember, $("#returnchecklist").serialize(), function(data){
+						generateHtmlTable(data);
+					}, 'json').done(function(){
+						$("#returnMessage").html('<div class="alert alert-success" role="alert"><strong>Bravo!</strong> Le retour a bien été effectué.</div>');
+					}).fail(function(){
+						$("#returnMessage").html('<div class="alert alert-danger" role="alert"><strong>Attention!</strong> Veuillez cocher au moins une case.</div>');
+					});
+				event.preventDefault();
+			});
+			
+			function generateHtmlTable(data){
+				$('#tofillwithborrowlist').empty();
+				$("#returnMessage").empty();
+				if(data.length > 0){
+					var toappend="";
+					toappend+='<form:form method="POST" id="returnchecklist" commandName="borrowreturned">';
+					toappend+='<table class="table">';
+					toappend+='<thead>';
+					toappend+='<tr>';
+					toappend+='<th>Titre</th>';
+					toappend+='<th>ISBN</th>';
+					toappend+="<th>Date d'emprunt</th>";
+					toappend+='<th>Retour</th>';
+					toappend+='</tr>';
+					toappend+='</thead>';
+					toappend+='<tbody id="borrowed">';					
+					
+					for(i=0;i<data.length;i++)
+					{
+						toappend+="<tr><td>"+data[i].book.titleBook+"</td>";
+						toappend+="<td>"+data[i].book.isbn+"</td>";
+						toappend+="<td>"+data[i].dateBorrowEnd+"</td>";
+						toappend+='<td><input type="checkbox" name="returned" value="'+data[i].idBorrow+'" /></td>';
+						toappend+="</tr>";
+						
+						
+					}
+					toappend+='</tbody>	';	
+					toappend+='</table>';
+					toappend+= '<button type="submit" class="btn btn-primary" id="submit">Valider</button>';
+					toappend+='</form:form>';
+					$('#tofillwithborrowlist').append(toappend);
+				}else{
+					$("#returnMessage").html('<div class="alert alert-warning" role="alert"><strong>Attention!</strong> Cet utilisateur n\'a aucun emprunt en cours.</div>');
+				}
+
+			};
+					
+			</script>
+			<div id="booksListe" style="display: none;">${books}</div>
+		</div>
 	</body>
 </html>
